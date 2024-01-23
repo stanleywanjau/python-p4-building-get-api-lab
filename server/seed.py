@@ -1,25 +1,43 @@
 #!/usr/bin/env python3
 
-from random import choice as rc
+from faker import Faker
+from random import randint
+from datetime import datetime
 
 from app import app
 from models import db, Bakery, BakedGood
 
 with app.app_context():
+    fake = Faker()
 
     BakedGood.query.delete()
     Bakery.query.delete()
-    
-    bakeries = []
-    bakeries.append(Bakery(name='Delightful donuts'));
-    bakeries.append(Bakery(name='Incredible crullers'));
-    db.session.add_all(bakeries)
 
-    baked_goods = []
-    baked_goods.append(BakedGood(name='Chocolate dipped donut', price=2.75, bakery=bakeries[0]));
-    baked_goods.append(BakedGood(name='Apple-spice filled donut', price=3.50, bakery=bakeries[0]));
-    baked_goods.append(BakedGood(name='Glazed honey cruller', price=3.25, bakery=bakeries[1]));
-    baked_goods.append(BakedGood(name='Chocolate cruller', price=3.40, bakery=bakeries[1]));
+    # Generate fake data
+    NUM_BAKERIES = 5
+    NUM_BAKED_GOODS_PER_BAKERY = 10
 
-    db.session.add_all(baked_goods)
+    for _ in range(NUM_BAKERIES):
+        bakery = Bakery(name=fake.company())
+        db.session.add(bakery)
+
+        for _ in range(NUM_BAKED_GOODS_PER_BAKERY):
+            baked_good = BakedGood(
+                name=fake.word(),
+                price=randint(1, 10),
+                bakery=bakery
+            )
+            db.session.add(baked_good)
+
+    # Commit the changes to the database
     db.session.commit()
+
+    # Set 'updated_at' for all objects to the current timestamp
+    current_time = datetime.utcnow()
+    Bakery.query.update({'updated_at': current_time})
+    BakedGood.query.update({'updated_at': current_time})
+
+    # Commit the changes to the database
+    db.session.commit()
+
+print("Fake data has been successfully generated and added to the database.")
